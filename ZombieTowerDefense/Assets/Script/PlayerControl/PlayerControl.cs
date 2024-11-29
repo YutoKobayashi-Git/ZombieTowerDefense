@@ -34,6 +34,7 @@ public class PlayerControl : MonoBehaviour
     void Update()
     {
         MousePosition();
+        MoveSoldier();
     }
 
     private void MousePosition()
@@ -50,11 +51,18 @@ public class PlayerControl : MonoBehaviour
 
             if (baseFieldHits.Any())
             {
-                var distance = Vector3.Distance(mainCamera.transform.position, raycastHitList.First().point);
-                var mousePosition = new Vector3(Input.mousePosition.x, Input.mousePosition.y, distance);
+                // 地面のPlaneを定義（通常はy=0の平面）
+                Plane groundPlane = new Plane(Vector3.up, Vector3.zero);
 
-                currentPosition = mainCamera.ScreenToWorldPoint(mousePosition);
-                currentPosition.y = 0;
+                // マウス位置のスクリーン座標からRayを生成
+                Ray raya = mainCamera.ScreenPointToRay(Input.mousePosition);
+
+                // レイと地面の交点を計算
+                if (groundPlane.Raycast(raya, out float distance))
+                {
+                    currentPosition = raya.GetPoint(distance);  // レイと地面の交点
+                    currentPosition.y = 0;  // y座標を0に設定
+                }
             }
 
             // 兵士をRayでとる
@@ -64,8 +72,26 @@ public class PlayerControl : MonoBehaviour
 
             if(SoldierHits.Any()) 
             {
-                currentPlayer = raycastHitList.First().collider.gameObject.GetComponent<BaseSoldier>();
+                // SoldierHitsの最初のヒットを取得
+                var firstSoldier = SoldierHits.First();
+
+                // BaseSoldierコンポーネントを取得
+                currentPlayer = firstSoldier.collider.gameObject.GetComponent<BaseSoldier>();
             }
+        }
+
+
+
+    }
+
+    private void MoveSoldier()
+    {
+        if (Input.GetMouseButtonDown(1))
+        {
+            if (currentPlayer == null) return;
+
+            currentPlayer.OnWalkMove(currentPosition);
+
         }
     }
 
